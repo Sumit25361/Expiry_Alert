@@ -1,0 +1,129 @@
+<!-- Add EmailJS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<!-- Add your email service script -->
+<script src="email_service.js"></script>
+
+<script>
+// Function to send notification after document is added
+async function sendDocumentNotification(documentData) {
+  const { email, documentName, issueDate, expiryDate } = documentData;
+  
+  // Show loading state
+  showNotification('Sending email notification...', 'info');
+  
+  try {
+    const result = await emailService.sendDocumentAddedNotification(
+      email, 
+      documentName, 
+      issueDate, 
+      expiryDate
+    );
+    
+    if (result.success) {
+      showNotification('Document added and email sent successfully!', 'success');
+    } else {
+      showNotification('Document added but email failed to send', 'warning');
+    }
+  } catch (error) {
+    console.error('Email notification error:', error);
+    showNotification('Document added but email notification failed', 'warning');
+  }
+}
+
+// Enhanced notification display function
+function showNotification(message, type = 'info') {
+  // Remove existing notifications
+  const existingNotifications = document.querySelectorAll('.notification');
+  existingNotifications.forEach(notification => notification.remove());
+  
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.innerHTML = `
+    <div class="notification-content">
+      <span class="notification-icon">${getNotificationIcon(type)}</span>
+      <span class="notification-message">${message}</span>
+      <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+    </div>
+  `;
+  
+  // Add styles
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 400px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease-out;
+    ${getNotificationStyles(type)}
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.animation = 'slideOut 0.3s ease-in';
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, 5000);
+}
+
+function getNotificationIcon(type) {
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  return icons[type] || icons.info;
+}
+
+function getNotificationStyles(type) {
+  const styles = {
+    success: 'background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;',
+    error: 'background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;',
+    warning: 'background: #fef3c7; color: #d97706; border: 1px solid #fde68a;',
+    info: 'background: #dbeafe; color: #2563eb; border: 1px solid #bfdbfe;'
+  };
+  return styles[type] || styles.info;
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+  
+  .notification-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .notification-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: auto;
+    opacity: 0.7;
+  }
+  
+  .notification-close:hover {
+    opacity: 1;
+  }
+`;
+document.head.appendChild(style);
+</script>

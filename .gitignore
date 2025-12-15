@@ -1,0 +1,9 @@
+logs/
+pending_emails/
+saved_emails/
+email_log.txt
+email_debug.log
+email_queue.json
+email_queue.log
+test_debug_email.php
+config/email.php
