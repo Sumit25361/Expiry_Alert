@@ -28,20 +28,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($result->num_rows == 1) {
             $user = $result->fetch_assoc();
-            
+
             // Verify password (using password_verify if passwords are hashed)
             if (password_verify($password, $user["password"]) || $password === $user["password"]) {
                 // Set session variables
                 $_SESSION["email"] = $email;
                 $_SESSION["username"] = $user["username"];
                 $_SESSION["user_id"] = $user["id"];
-                
+
                 // Update last login time
                 $update_stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
                 $update_stmt->bind_param("i", $user["id"]);
                 $update_stmt->execute();
                 $update_stmt->close();
-                
+
                 // Redirect to dashboard
                 header("Location: index.php");
                 exit();
@@ -58,6 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -266,23 +267,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @media (max-width: 480px) {
             .login-container {
                 margin: 10px;
             }
-            
+
             .login-header {
                 padding: 30px 20px;
             }
-            
+
             .login-header h2 {
                 font-size: 2rem;
             }
-            
+
             .form-container {
                 padding: 30px 20px;
             }
@@ -297,6 +303,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -348,6 +355,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </style>
 </head>
+
 <body>
     <div class="login-container fade-in">
         <div class="login-header">
@@ -363,7 +371,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
             <?php endif; ?>
 
-          <!-- <div class="features-list">
+            <!-- <div class="features-list">
                 <h4>✨ What you can do with Expiry Alert</h4>
                 <div class="feature-item">
                     <span class="feature-icon">📄</span>
@@ -386,10 +394,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <form method="POST" id="loginForm">
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" name="email" id="email" placeholder="Enter your email" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                    <input type="email" name="email" id="email" placeholder="Enter your email" required
+                        value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                     <span class="input-icon">📧</span>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" name="password" id="password" placeholder="Enter your password" required>
@@ -397,9 +406,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
 
                 <div class="forgot-password">
-                    <a href="#">Forgot password?</a>
+                    <a href="forgot_password.php">Forgot password?</a>
                 </div>
-                
+
                 <button type="submit" class="login-btn">
                     Sign In
                 </button>
@@ -417,19 +426,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <script>
         // Form submission with loading state
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
             const button = this.querySelector('.login-btn');
             const overlay = document.getElementById('loadingOverlay');
-            
+
             // Validate form
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
+
             if (!email || !password) {
                 e.preventDefault();
                 return;
             }
-            
+
             button.innerHTML = '⏳ Signing In...';
             button.style.opacity = '0.7';
             overlay.style.display = 'flex';
@@ -439,7 +448,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const toggleIcon = document.querySelector('.password-toggle');
-            
+
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
                 toggleIcon.textContent = '🙈';
@@ -452,7 +461,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Input validation and styling
         const inputs = document.querySelectorAll('input');
         inputs.forEach(input => {
-            input.addEventListener('blur', function() {
+            input.addEventListener('blur', function () {
                 if (this.value.trim() === '') {
                     this.style.borderColor = '#ef4444';
                 } else if (this.type === 'email' && !isValidEmail(this.value)) {
@@ -462,7 +471,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             });
 
-            input.addEventListener('focus', function() {
+            input.addEventListener('focus', function () {
                 this.style.borderColor = '#4f46e5';
             });
         });
@@ -474,12 +483,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // Auto-focus first input
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('email').focus();
         });
 
         // Enter key navigation
-        document.getElementById('email').addEventListener('keypress', function(e) {
+        document.getElementById('email').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 document.getElementById('password').focus();
                 e.preventDefault();
@@ -488,10 +497,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Shake animation for errors
         <?php if ($error_message): ?>
-        document.addEventListener('DOMContentLoaded', function() {
-            const container = document.querySelector('.login-container');
-            container.style.animation = 'shake 0.5s ease-in-out';
-        });
+            document.addEventListener('DOMContentLoaded', function () {
+                const container = document.querySelector('.login-container');
+                container.style.animation = 'shake 0.5s ease-in-out';
+            });
         <?php endif; ?>
 
         // Add shake keyframes
@@ -506,4 +515,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         document.head.appendChild(style);
     </script>
 </body>
+
 </html>

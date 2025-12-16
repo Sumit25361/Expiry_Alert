@@ -17,12 +17,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'delete_user':
-                $userId = (int)$_POST['user_id'];
-                
+                $userId = (int) $_POST['user_id'];
+
                 // Delete user and all their data
                 $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
                 $stmt->bind_param("i", $userId);
-                
+
                 if ($stmt->execute()) {
                     $success_message = "User deleted successfully!";
                     $auth->logActivity($_SESSION['admin_id'], 'delete_user', "Deleted user ID: $userId");
@@ -30,14 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_message = "Error deleting user.";
                 }
                 break;
-                
+
             case 'toggle_status':
-                $userId = (int)$_POST['user_id'];
+                $userId = (int) $_POST['user_id'];
                 $newStatus = $_POST['new_status'];
-                
+
                 $stmt = $db->prepare("UPDATE users SET account_status = ? WHERE id = ?");
                 $stmt->bind_param("si", $newStatus, $userId);
-                
+
                 if ($stmt->execute()) {
                     $success_message = "User status updated successfully!";
                     $auth->logActivity($_SESSION['admin_id'], 'update_user_status', "Updated user ID: $userId to status: $newStatus");
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get users with pagination
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
 $limit = 20;
 $offset = ($page - 1) * $limit;
 
@@ -106,6 +106,7 @@ $stats = $statsResult->fetch_assoc();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,6 +124,7 @@ $stats = $statsResult->fetch_assoc();
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
             background-color: #4e73df;
         }
+
         .sidebar-sticky {
             position: relative;
             top: 0;
@@ -131,20 +133,25 @@ $stats = $statsResult->fetch_assoc();
             overflow-x: hidden;
             overflow-y: auto;
         }
+
         .sidebar .nav-link {
             font-weight: 500;
             color: #fff;
             padding: .75rem 1rem;
         }
+
         .sidebar .nav-link:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
+
         .sidebar .nav-link.active {
             background-color: rgba(255, 255, 255, 0.2);
         }
+
         .sidebar .nav-link i {
             margin-right: 10px;
         }
+
         .navbar-brand {
             padding-top: .75rem;
             padding-bottom: .75rem;
@@ -152,29 +159,35 @@ $stats = $statsResult->fetch_assoc();
             background-color: rgba(0, 0, 0, .25);
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
         }
+
         main {
             margin-top: 56px;
         }
+
         .status-badge {
             padding: 0.25rem 0.5rem;
             border-radius: 0.25rem;
             font-size: 0.75rem;
             font-weight: 600;
         }
+
         .status-active {
             background-color: #d4edda;
             color: #155724;
         }
+
         .status-inactive {
             background-color: #f8d7da;
             color: #721c24;
         }
+
         .status-suspended {
             background-color: #fff3cd;
             color: #856404;
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
         <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="#">EDR Admin</a>
@@ -208,27 +221,28 @@ $stats = $statsResult->fetch_assoc();
                                 Items
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
+                        <li class="nav-item">
                             <a class="nav-link" href="notifications.php">
                                 <i class="fas fa-bell"></i>
                                 Notifications
                             </a>
-                        </li> -->
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="contact_admin.php">
                                 <i class="fas fa-envelope"></i>
                                 Contact Messages
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
+                        <li class="nav-item">
                             <a class="nav-link" href="settings.php">
                                 <i class="fas fa-cog"></i>
                                 Settings
                             </a>
-                        </li> --> 
+                        </li>
                     </ul>
 
-                    <!-- <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white">
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white">
                         <span>Reports</span>
                     </h6>
                     <ul class="nav flex-column mb-2">
@@ -244,12 +258,13 @@ $stats = $statsResult->fetch_assoc();
                                 System Logs
                             </a>
                         </li>
-                    </ul> -->
+                    </ul>
                 </div>
             </nav>
 
             <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Users Management</h1>
                 </div>
 
@@ -280,7 +295,8 @@ $stats = $statsResult->fetch_assoc();
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                             Total Users</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $stats['total']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $stats['total']; ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -297,7 +313,8 @@ $stats = $statsResult->fetch_assoc();
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                             Active Users</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $stats['active']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $stats['active']; ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-user-check fa-2x text-gray-300"></i>
@@ -314,7 +331,8 @@ $stats = $statsResult->fetch_assoc();
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                             Inactive Users</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $stats['inactive']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $stats['inactive']; ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-user-times fa-2x text-gray-300"></i>
@@ -331,7 +349,8 @@ $stats = $statsResult->fetch_assoc();
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                             New Users (30 days)</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $stats['new_users']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $stats['new_users']; ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-user-plus fa-2x text-gray-300"></i>
@@ -350,7 +369,9 @@ $stats = $statsResult->fetch_assoc();
                     <div class="card-body">
                         <form method="GET" class="form-inline">
                             <div class="form-group mr-3">
-                                <input type="text" class="form-control" name="search" placeholder="Search by name or email" value="<?php echo htmlspecialchars($search); ?>">
+                                <input type="text" class="form-control" name="search"
+                                    placeholder="Search by name or email"
+                                    value="<?php echo htmlspecialchars($search); ?>">
                             </div>
                             <button type="submit" class="btn btn-primary mr-2">Search</button>
                             <a href="users.php" class="btn btn-secondary">Clear</a>
@@ -380,34 +401,37 @@ $stats = $statsResult->fetch_assoc();
                                 </thead>
                                 <tbody>
                                     <?php while ($user = $users->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo $user['id']; ?></td>
-                                        <td><?php echo htmlspecialchars($user['username']); ?></td>
-                                        <td><?php echo htmlspecialchars($user['email']); ?></td>
-                                        <td><?php echo htmlspecialchars($user['phone']); ?></td>
-                                        <td>
-                                            <span class="status-badge status-<?php echo $user['account_status']; ?>">
-                                                <?php echo ucfirst($user['account_status']); ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
-                                        <td>
-                                            <?php echo $user['last_login'] ? date('M d, Y H:i', strtotime($user['last_login'])) : 'Never'; ?>
-                                        </td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-sm btn-info" onclick="viewUser(<?php echo $user['id']; ?>)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-warning" onclick="toggleStatus(<?php echo $user['id']; ?>, '<?php echo $user['account_status']; ?>')">
-                                                    <i class="fas fa-toggle-on"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td><?php echo $user['id']; ?></td>
+                                            <td><?php echo htmlspecialchars($user['username']); ?></td>
+                                            <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                            <td><?php echo htmlspecialchars($user['phone']); ?></td>
+                                            <td>
+                                                <span class="status-badge status-<?php echo $user['account_status']; ?>">
+                                                    <?php echo ucfirst($user['account_status']); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
+                                            <td>
+                                                <?php echo $user['last_login'] ? date('M d, Y H:i', strtotime($user['last_login'])) : 'Never'; ?>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-info"
+                                                        onclick="viewUser(<?php echo $user['id']; ?>)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-warning"
+                                                        onclick="toggleStatus(<?php echo $user['id']; ?>, '<?php echo $user['account_status']; ?>')">
+                                                        <i class="fas fa-toggle-on"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-danger"
+                                                        onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -415,27 +439,30 @@ $stats = $statsResult->fetch_assoc();
 
                         <!-- Pagination -->
                         <?php if ($totalPages > 1): ?>
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-                                <?php if ($page > 1): ?>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=<?php echo $page - 1; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>">Previous</a>
-                                    </li>
-                                <?php endif; ?>
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    <?php if ($page > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link"
+                                                href="?page=<?php echo $page - 1; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>">Previous</a>
+                                        </li>
+                                    <?php endif; ?>
 
-                                <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
-                                    <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                        <a class="page-link" href="?page=<?php echo $i; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>"><?php echo $i; ?></a>
-                                    </li>
-                                <?php endfor; ?>
+                                    <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
+                                        <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
+                                            <a class="page-link"
+                                                href="?page=<?php echo $i; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>"><?php echo $i; ?></a>
+                                        </li>
+                                    <?php endfor; ?>
 
-                                <?php if ($page < $totalPages): ?>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=<?php echo $page + 1; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>">Next</a>
-                                    </li>
-                                <?php endif; ?>
-                            </ul>
-                        </nav>
+                                    <?php if ($page < $totalPages): ?>
+                                        <li class="page-item">
+                                            <a class="page-link"
+                                                href="?page=<?php echo $page + 1; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>">Next</a>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -486,4 +513,5 @@ $stats = $statsResult->fetch_assoc();
         }
     </script>
 </body>
+
 </html>

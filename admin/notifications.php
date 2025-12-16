@@ -1,5 +1,9 @@
 <?php
 require_once 'config/admin_auth.php';
+// Enable Error Reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once 'email_sender.php'; // Include our simple email sender
 
 // Initialize auth
@@ -13,24 +17,26 @@ $success_message = '';
 $error_message = '';
 
 // Function to send email using our simple sender
-function sendEmail($to, $subject, $message) {
+function sendEmail($to, $subject, $message)
+{
     global $emailSender;
     return $emailSender->sendEmail($to, $subject, $message);
 }
 
 // Function to get user's expiring items from EDR database
-function getUserExpiringItems($db, $email, $daysAhead) {
+function getUserExpiringItems($db, $email, $daysAhead)
+{
     $tables = [
         'documents' => 'document_name',
-        'medicines' => 'medicine_name', 
+        'medicines' => 'medicine_name',
         'foods' => 'food_name',
         'books' => 'book_name',
         'cosmetics' => 'cosmetic_name',
         'other_items' => 'item_name'
     ];
-    
+
     $expiringItems = [];
-    
+
     foreach ($tables as $table => $nameColumn) {
         // Check if table exists first
         $tableCheck = $db->query("SHOW TABLES LIKE '$table'");
@@ -39,13 +45,13 @@ function getUserExpiringItems($db, $email, $daysAhead) {
                      FROM $table 
                      WHERE email = ? AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
                      ORDER BY expiry_date ASC";
-            
+
             $stmt = $db->prepare($query);
             if ($stmt) {
                 $stmt->bind_param('si', $email, $daysAhead);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 while ($row = $result->fetch_assoc()) {
                     $expiringItems[] = $row;
                 }
@@ -53,23 +59,24 @@ function getUserExpiringItems($db, $email, $daysAhead) {
             }
         }
     }
-    
+
     return $expiringItems;
 }
 
 // Function to get all users with expiring items
-function getAllUsersWithExpiringItems($db, $daysAhead) {
+function getAllUsersWithExpiringItems($db, $daysAhead)
+{
     $tables = [
         'documents' => 'document_name',
-        'medicines' => 'medicine_name', 
+        'medicines' => 'medicine_name',
         'foods' => 'food_name',
         'books' => 'book_name',
         'cosmetics' => 'cosmetic_name',
         'other_items' => 'item_name'
     ];
-    
+
     $userEmails = [];
-    
+
     foreach ($tables as $table => $nameColumn) {
         // Check if table exists first
         $tableCheck = $db->query("SHOW TABLES LIKE '$table'");
@@ -77,13 +84,13 @@ function getAllUsersWithExpiringItems($db, $daysAhead) {
             $query = "SELECT DISTINCT email FROM $table 
                      WHERE expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
                      AND email IS NOT NULL AND email != ''";
-            
+
             $stmt = $db->prepare($query);
             if ($stmt) {
                 $stmt->bind_param('i', $daysAhead);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 while ($row = $result->fetch_assoc()) {
                     if (!empty($row['email']) && filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
                         $userEmails[] = $row['email'];
@@ -93,12 +100,13 @@ function getAllUsersWithExpiringItems($db, $daysAhead) {
             }
         }
     }
-    
+
     return array_unique($userEmails);
 }
 
 // Function to create expiry notification email content
-function createExpiryEmailContent($items, $daysAhead, $userEmail) {
+function createExpiryEmailContent($items, $daysAhead, $userEmail)
+{
     $html = '
     <!DOCTYPE html>
     <html>
@@ -130,11 +138,11 @@ function createExpiryEmailContent($items, $daysAhead, $userEmail) {
             <div class="content">
                 <h2>Hello!</h2>
                 <p>You have <strong>' . count($items) . ' item(s)</strong> that will expire in the next ' . $daysAhead . ' days. Please review the details below:</p>';
-    
+
     foreach ($items as $item) {
         $daysUntilExpiry = (strtotime($item['expiry_date']) - strtotime(date('Y-m-d'))) / (60 * 60 * 24);
         $daysUntilExpiry = ceil($daysUntilExpiry);
-        
+
         if ($daysUntilExpiry <= 0) {
             $urgencyClass = 'urgent';
             $textClass = 'urgent-text';
@@ -152,9 +160,9 @@ function createExpiryEmailContent($items, $daysAhead, $userEmail) {
             $textClass = 'info-text';
             $statusText = 'EXPIRES IN ' . $daysUntilExpiry . ' DAYS';
         }
-        
+
         $categoryName = ucfirst(str_replace('_', ' ', $item['category']));
-        
+
         $html .= '
                 <div class="item ' . $urgencyClass . '">
                     <div class="item-name">' . htmlspecialchars($item['item_name']) . '</div>
@@ -163,7 +171,7 @@ function createExpiryEmailContent($items, $daysAhead, $userEmail) {
                     <div class="days-remaining ' . $textClass . '">' . $statusText . '</div>
                 </div>';
     }
-    
+
     $html .= '
                 <div style="margin-top: 30px; padding: 20px; background-color: #e8f4fd; border-radius: 8px; border-left: 4px solid #17a2b8;">
                     <h3 style="margin-top: 0; color: #0c5460;">📋 What should you do?</h3>
@@ -189,7 +197,7 @@ function createExpiryEmailContent($items, $daysAhead, $userEmail) {
         </div>
     </body>
     </html>';
-    
+
     return $html;
 }
 
@@ -200,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'send_test_notification':
                 $testEmail = $_POST['test_email'];
                 $subject = "🔔 Test Notification from EDR Admin";
-                
+
                 // Get sample data
                 $sampleItems = [
                     [
@@ -214,9 +222,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'expiry_date' => date('Y-m-d', strtotime('+1 day'))
                     ]
                 ];
-                
+
                 $message = createExpiryEmailContent($sampleItems, 7, $testEmail);
-                
+
                 if (sendEmail($testEmail, $subject, $message)) {
                     $success_message = "✅ Test notification sent successfully to: " . htmlspecialchars($testEmail);
                     $auth->logActivity($_SESSION['admin_id'], 'send_test_notification', "Test notification sent to: $testEmail");
@@ -224,46 +232,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_message = "❌ Failed to send test notification to: " . htmlspecialchars($testEmail) . ". Check email_log.txt for details.";
                 }
                 break;
-                
+
             case 'send_bulk_reminder':
                 $reminderType = $_POST['reminder_type'];
-                $daysAhead = (int)$_POST['days_ahead'];
-                
+                $daysAhead = (int) $_POST['days_ahead'];
+
                 // Get all users with expiring items from EDR database
                 $userEmails = getAllUsersWithExpiringItems($db, $daysAhead);
-                
+
                 $sentCount = 0;
                 $failedCount = 0;
-                
+
                 foreach ($userEmails as $email) {
                     // Get user's specific expiring items
                     $expiringItems = getUserExpiringItems($db, $email, $daysAhead);
-                    
+
                     if (!empty($expiringItems)) {
                         $itemCount = count($expiringItems);
                         $subject = "⚠️ EDR Alert: $itemCount Item(s) Expiring in $daysAhead Days";
                         $message = createExpiryEmailContent($expiringItems, $daysAhead, $email);
-                        
+
                         if (sendEmail($email, $subject, $message)) {
                             $sentCount++;
                         } else {
                             $failedCount++;
                         }
-                        
+
                         // Small delay to avoid overwhelming the mail server
                         usleep(500000); // 0.5 second delay
                     }
                 }
-                
-                if ($sentCount > 0) {
+
+                if (empty($userEmails)) {
+                    $error_message = "ℹ️ No users found with items expiring in the next $daysAhead days.";
+                } elseif ($sentCount > 0) {
                     $success_message = "✅ Bulk reminder sent successfully to $sentCount users for items expiring in $daysAhead days.";
                     if ($failedCount > 0) {
                         $success_message .= " ⚠️ ($failedCount emails failed to send)";
                     }
                 } else {
-                    $error_message = "❌ No emails were sent. Either no users have expiring items in the next $daysAhead days or all emails failed to send.";
+                    $error_message = "❌ Found " . count($userEmails) . " users, but failed to send any emails. Check email_log.txt.";
                 }
-                
+
                 $auth->logActivity($_SESSION['admin_id'], 'send_bulk_reminder', "Bulk reminder for $daysAhead days - Sent: $sentCount, Failed: $failedCount");
                 break;
         }
@@ -303,13 +313,13 @@ foreach ($tables as $table) {
         if ($result) {
             $stats['items_expiring_today'] += $result->fetch_assoc()['count'];
         }
-        
+
         // Items expiring this week
         $result = $db->query("SELECT COUNT(*) as count FROM $table WHERE expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)");
         if ($result) {
             $stats['items_expiring_week'] += $result->fetch_assoc()['count'];
         }
-        
+
         // Expired items
         $result = $db->query("SELECT COUNT(*) as count FROM $table WHERE expiry_date < CURDATE()");
         if ($result) {
@@ -321,6 +331,7 @@ foreach ($tables as $table) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -338,6 +349,7 @@ foreach ($tables as $table) {
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
             background-color: #4e73df;
         }
+
         .sidebar-sticky {
             position: relative;
             top: 0;
@@ -346,20 +358,25 @@ foreach ($tables as $table) {
             overflow-x: hidden;
             overflow-y: auto;
         }
+
         .sidebar .nav-link {
             font-weight: 500;
             color: #fff;
             padding: .75rem 1rem;
         }
+
         .sidebar .nav-link:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
+
         .sidebar .nav-link.active {
             background-color: rgba(255, 255, 255, 0.2);
         }
+
         .sidebar .nav-link i {
             margin-right: 10px;
         }
+
         .navbar-brand {
             padding-top: .75rem;
             padding-bottom: .75rem;
@@ -367,9 +384,11 @@ foreach ($tables as $table) {
             background-color: rgba(0, 0, 0, .25);
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
         }
+
         main {
             margin-top: 56px;
         }
+
         .email-preview {
             background-color: #f8f9fc;
             border: 1px solid #e3e6f0;
@@ -379,6 +398,7 @@ foreach ($tables as $table) {
             max-height: 400px;
             overflow-y: auto;
         }
+
         .config-warning {
             background-color: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -386,14 +406,17 @@ foreach ($tables as $table) {
             padding: 15px;
             margin-bottom: 20px;
         }
+
         .stats-card {
             transition: transform 0.2s;
         }
+
         .stats-card:hover {
             transform: translateY(-2px);
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
         <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="#">EDR Admin</a>
@@ -433,26 +456,60 @@ foreach ($tables as $table) {
                                 Notifications
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="contact_admin.php">
+                                <i class="fas fa-envelope"></i>
+                                Contact Messages
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="settings.php">
+                                <i class="fas fa-cog"></i>
+                                Settings
+                            </a>
+                        </li>
+                    </ul>
+
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white">
+                        <span>Reports</span>
+                    </h6>
+                    <ul class="nav flex-column mb-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="reports.php">
+                                <i class="fas fa-chart-bar"></i>
+                                Analytics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="logs.php">
+                                <i class="fas fa-list"></i>
+                                System Logs
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>
 
             <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">📧 EDR Notifications Management</h1>
                 </div>
 
                 <!-- Configuration Warning -->
-                <div class="config-warning">
+                <!-- <div class="config-warning">
                     <h6><i class="fas fa-exclamation-triangle"></i> Email Configuration Required</h6>
-                    <p class="mb-2">To send emails to users' Gmail accounts, update the email configuration in <code>email_sender.php</code>:</p>
+                    <p class="mb-2">To send emails to users' Gmail accounts, update the email configuration in
+                        <code>email_sender.php</code>:</p>
                     <ul class="mb-2">
                         <li><code>smtp_username</code> - Your Gmail address</li>
                         <li><code>smtp_password</code> - Your Gmail app password</li>
                         <li><code>from_email</code> - Your Gmail address</li>
                     </ul>
-                    <small><strong>Gmail Setup:</strong> Enable 2FA and create an "App Password" in your Google Account settings.</small>
-                </div>
+                    <small><strong>Gmail Setup:</strong> Enable 2FA and create an "App Password" in your Google Account
+                        settings.</small>
+                </div> -->
 
                 <?php if ($success_message): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -481,7 +538,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                             Total Users</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($stats['total_users']); ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo number_format($stats['total_users']); ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -498,7 +557,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                             Expiring Today</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($stats['items_expiring_today']); ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo number_format($stats['items_expiring_today']); ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-clock fa-2x text-gray-300"></i>
@@ -515,7 +576,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                             Expiring This Week</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($stats['items_expiring_week']); ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo number_format($stats['items_expiring_week']); ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -532,7 +595,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                             Expired Items</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($stats['items_expired']); ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo number_format($stats['items_expired']); ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
@@ -555,9 +620,10 @@ foreach ($tables as $table) {
                                     <input type="hidden" name="action" value="send_test_notification">
                                     <div class="form-group">
                                         <label for="test_email">Test Email Address</label>
-                                        <input type="email" class="form-control" id="test_email" name="test_email" required 
-                                               placeholder="user@gmail.com">
-                                        <small class="form-text text-muted">This will send a sample expiry notification with test data</small>
+                                        <input type="email" class="form-control" id="test_email" name="test_email"
+                                            required placeholder="user@gmail.com">
+                                        <small class="form-text text-muted">This will send a sample expiry notification
+                                            with test data</small>
                                     </div>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-paper-plane mr-2"></i>Send Test Email
@@ -591,9 +657,11 @@ foreach ($tables as $table) {
                                             <option value="14">Next 14 Days</option>
                                             <option value="30">Next 30 Days</option>
                                         </select>
-                                        <small class="form-text text-muted">This will send personalized emails to all users with items expiring in the selected timeframe</small>
+                                        <small class="form-text text-muted">This will send personalized emails to all
+                                            users with items expiring in the selected timeframe</small>
                                     </div>
-                                    <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to send bulk emails? This will send emails to all users with expiring items.')">
+                                    <button type="submit" class="btn btn-warning"
+                                        onclick="return confirm('Are you sure you want to send bulk emails? This will send emails to all users with expiring items.')">
                                         <i class="fas fa-broadcast-tower mr-2"></i>Send Bulk Reminders
                                     </button>
                                 </form>
@@ -610,7 +678,7 @@ foreach ($tables as $table) {
                     <div class="card-body">
                         <p>This is how the expiry notification emails will look to your users:</p>
                         <div class="email-preview">
-                            <?php 
+                            <?php
                             // Show a sample email with realistic EDR data
                             $sampleItems = [
                                 [
@@ -632,29 +700,29 @@ foreach ($tables as $table) {
 
                 <!-- Email Log -->
                 <?php if (file_exists('email_log.txt')): ?>
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-info">📋 Email Activity Log</h6>
-                    </div>
-                    <div class="card-body">
-                        <p>Recent email sending activity:</p>
-                        <a href="email_log.txt" target="_blank" class="btn btn-outline-info">View Full Email Log</a>
-                        <div class="mt-3">
-                            <small class="text-muted">
-                                <?php
-                                $logContent = file_get_contents('email_log.txt');
-                                $lines = explode("\n", $logContent);
-                                $recentLines = array_slice(array_reverse($lines), 0, 5);
-                                foreach ($recentLines as $line) {
-                                    if (!empty(trim($line))) {
-                                        echo htmlspecialchars($line) . "<br>";
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-info">📋 Email Activity Log</h6>
+                        </div>
+                        <div class="card-body">
+                            <p>Recent email sending activity:</p>
+                            <a href="email_log.txt" target="_blank" class="btn btn-outline-info">View Full Email Log</a>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <?php
+                                    $logContent = file_get_contents('email_log.txt');
+                                    $lines = explode("\n", $logContent);
+                                    $recentLines = array_slice(array_reverse($lines), 0, 5);
+                                    foreach ($recentLines as $line) {
+                                        if (!empty(trim($line))) {
+                                            echo htmlspecialchars($line) . "<br>";
+                                        }
                                     }
-                                }
-                                ?>
-                            </small>
+                                    ?>
+                                </small>
+                            </div>
                         </div>
                     </div>
-                </div>
                 <?php endif; ?>
             </main>
         </div>
@@ -663,4 +731,5 @@ foreach ($tables as $table) {
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

@@ -16,14 +16,14 @@ $error_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'delete_item') {
         $table = $_POST['table'];
-        $itemId = (int)$_POST['item_id'];
-        
+        $itemId = (int) $_POST['item_id'];
+
         // Validate table name for security
         $allowedTables = ['documents', 'medicines', 'foods', 'books', 'cosmetics', 'other_items'];
         if (in_array($table, $allowedTables)) {
             $stmt = $db->prepare("DELETE FROM $table WHERE id = ?");
             $stmt->bind_param("i", $itemId);
-            
+
             if ($stmt->execute()) {
                 $success_message = "Item deleted successfully!";
                 $auth->logActivity($_SESSION['admin_id'], 'delete_item', "Deleted item ID: $itemId from table: $table");
@@ -49,7 +49,7 @@ $totalItems = 0;
 
 $tables = [
     'documents' => 'Documents',
-    'medicines' => 'Medicines', 
+    'medicines' => 'Medicines',
     'foods' => 'Foods',
     'books' => 'Books',
     'cosmetics' => 'Cosmetics',
@@ -60,20 +60,20 @@ if ($category === 'all') {
     // Get items from all tables
     foreach ($tables as $table => $tableName) {
         $nameColumn = $table === 'documents' ? 'document_name' :
-                     ($table === 'medicines' ? 'medicine_name' :
-                     ($table === 'foods' ? 'food_name' :
-                     ($table === 'books' ? 'book_name' :
-                     ($table === 'cosmetics' ? 'cosmetic_name' : 'item_name'))));
-        
+            ($table === 'medicines' ? 'medicine_name' :
+                ($table === 'foods' ? 'food_name' :
+                    ($table === 'books' ? 'book_name' :
+                        ($table === 'cosmetics' ? 'cosmetic_name' : 'item_name'))));
+
         $whereClause = '';
         if (!empty($search)) {
             $whereClause = "WHERE $nameColumn LIKE '%$search%' OR email LIKE '%$search%'";
         }
-        
+
         $query = "SELECT id, email, $nameColumn as name, mfg_date, expiry_date, created_at, '$table' as table_name, '$tableName' as category 
                   FROM $table $whereClause 
                   ORDER BY created_at DESC";
-        
+
         $result = $db->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
@@ -81,40 +81,40 @@ if ($category === 'all') {
             }
         }
     }
-    
+
     // Sort by created_at
-    usort($items, function($a, $b) {
+    usort($items, function ($a, $b) {
         return strtotime($b['created_at']) - strtotime($a['created_at']);
     });
-    
+
     $totalItems = count($items);
     // Remove the array_slice to show all items
-    
+
 } else {
     // Get items from specific table
     if (array_key_exists($category, $tables)) {
         $nameColumn = $category === 'documents' ? 'document_name' :
-                     ($category === 'medicines' ? 'medicine_name' :
-                     ($category === 'foods' ? 'food_name' :
-                     ($category === 'books' ? 'book_name' :
-                     ($category === 'cosmetics' ? 'cosmetic_name' : 'item_name'))));
-        
+            ($category === 'medicines' ? 'medicine_name' :
+                ($category === 'foods' ? 'food_name' :
+                    ($category === 'books' ? 'book_name' :
+                        ($category === 'cosmetics' ? 'cosmetic_name' : 'item_name'))));
+
         $whereClause = '';
         if (!empty($search)) {
             $whereClause = "WHERE $nameColumn LIKE '%$search%' OR email LIKE '%$search%'";
         }
-        
+
         // Get total count
         $countQuery = "SELECT COUNT(*) as total FROM $category $whereClause";
         $countResult = $db->query($countQuery);
         $totalItems = $countResult->fetch_assoc()['total'];
-        
+
         // Get items
         $query = "SELECT id, email, $nameColumn as name, mfg_date, expiry_date, created_at, '$category' as table_name, '{$tables[$category]}' as category 
                   FROM $category $whereClause 
                   ORDER BY created_at DESC 
                   LIMIT $limit OFFSET $offset";
-        
+
         $result = $db->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
@@ -136,6 +136,7 @@ foreach ($tables as $table => $tableName) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -153,6 +154,7 @@ foreach ($tables as $table => $tableName) {
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
             background-color: #4e73df;
         }
+
         .sidebar-sticky {
             position: relative;
             top: 0;
@@ -161,20 +163,25 @@ foreach ($tables as $table => $tableName) {
             overflow-x: hidden;
             overflow-y: auto;
         }
+
         .sidebar .nav-link {
             font-weight: 500;
             color: #fff;
             padding: .75rem 1rem;
         }
+
         .sidebar .nav-link:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
+
         .sidebar .nav-link.active {
             background-color: rgba(255, 255, 255, 0.2);
         }
+
         .sidebar .nav-link i {
             margin-right: 10px;
         }
+
         .navbar-brand {
             padding-top: .75rem;
             padding-bottom: .75rem;
@@ -182,29 +189,35 @@ foreach ($tables as $table => $tableName) {
             background-color: rgba(0, 0, 0, .25);
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
         }
+
         main {
             margin-top: 56px;
         }
+
         .status-badge {
             padding: 0.25rem 0.5rem;
             border-radius: 0.25rem;
             font-size: 0.75rem;
             font-weight: 600;
         }
+
         .status-expired {
             background-color: #f8d7da;
             color: #721c24;
         }
+
         .status-expiring {
             background-color: #fff3cd;
             color: #856404;
         }
+
         .status-good {
             background-color: #d4edda;
             color: #155724;
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
         <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="#">EDR Admin</a>
@@ -238,27 +251,28 @@ foreach ($tables as $table => $tableName) {
                                 Items
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
+                        <li class="nav-item">
                             <a class="nav-link" href="notifications.php">
                                 <i class="fas fa-bell"></i>
                                 Notifications
                             </a>
-                        </li> -->
-                       <li class="nav-item">
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="contact_admin.php">
                                 <i class="fas fa-envelope"></i>
                                 Contact Messages
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
+                        <li class="nav-item">
                             <a class="nav-link" href="settings.php">
                                 <i class="fas fa-cog"></i>
                                 Settings
                             </a>
-                        </li> -->
+                        </li>
                     </ul>
 
-                    <!-- <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white">
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white">
                         <span>Reports</span>
                     </h6>
                     <ul class="nav flex-column mb-2">
@@ -274,12 +288,13 @@ foreach ($tables as $table => $tableName) {
                                 System Logs
                             </a>
                         </li>
-                    </ul> -->
+                    </ul>
                 </div>
             </nav>
 
             <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Items Management</h1>
                 </div>
 
@@ -304,19 +319,20 @@ foreach ($tables as $table => $tableName) {
                 <!-- Statistics Cards -->
                 <div class="row mb-4">
                     <?php foreach ($stats as $category => $count): ?>
-                    <div class="col-xl-2 col-md-4 mb-3">
-                        <div class="card border-left-primary shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                            <?php echo $category; ?></div>
-                                        <div class="h6 mb-0 font-weight-bold text-gray-800"><?php echo $count; ?></div>
+                        <div class="col-xl-2 col-md-4 mb-3">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                <?php echo $category; ?>
+                                            </div>
+                                            <div class="h6 mb-0 font-weight-bold text-gray-800"><?php echo $count; ?></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
                     <?php endforeach; ?>
                 </div>
 
@@ -329,7 +345,8 @@ foreach ($tables as $table => $tableName) {
                         <form method="GET" class="form-inline">
                             <div class="form-group mr-3">
                                 <select name="category" class="form-control">
-                                    <option value="all" <?php echo $category === 'all' ? 'selected' : ''; ?>>All Categories</option>
+                                    <option value="all" <?php echo $category === 'all' ? 'selected' : ''; ?>>All
+                                        Categories</option>
                                     <?php foreach ($tables as $table => $tableName): ?>
                                         <option value="<?php echo $table; ?>" <?php echo $category === $table ? 'selected' : ''; ?>>
                                             <?php echo $tableName; ?>
@@ -338,7 +355,8 @@ foreach ($tables as $table => $tableName) {
                                 </select>
                             </div>
                             <div class="form-group mr-3">
-                                <input type="text" class="form-control" name="search" placeholder="Search items..." value="<?php echo htmlspecialchars($search); ?>">
+                                <input type="text" class="form-control" name="search" placeholder="Search items..."
+                                    value="<?php echo htmlspecialchars($search); ?>">
                             </div>
                             <button type="submit" class="btn btn-primary mr-2">Filter</button>
                             <a href="items.php" class="btn btn-secondary">Clear</a>
@@ -367,15 +385,15 @@ foreach ($tables as $table => $tableName) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($items as $item): 
+                                    <?php foreach ($items as $item):
                                         $expiryDate = new DateTime($item['expiry_date']);
                                         $today = new DateTime();
                                         $diff = $today->diff($expiryDate);
                                         $daysRemaining = $expiryDate > $today ? $diff->days : -$diff->days;
-                                        
+
                                         $statusClass = 'status-good';
                                         $statusText = '';
-                                        
+
                                         if ($daysRemaining < 0) {
                                             $statusClass = 'status-expired';
                                             $statusText = 'Expired';
@@ -386,31 +404,32 @@ foreach ($tables as $table => $tableName) {
                                             $statusClass = 'status-good';
                                             $statusText = $daysRemaining . ' days remaining';
                                         }
-                                    ?>
-                                    <tr>
-                                        <td><?php echo $item['id']; ?></td>
-                                        <td><?php echo htmlspecialchars($item['name']); ?></td>
-                                        <td><?php echo $item['category']; ?></td>
-                                        <td><?php echo htmlspecialchars($item['email']); ?></td>
-                                        <td><?php echo date('M d, Y', strtotime($item['expiry_date'])); ?></td>
-                                        <td>
-                                            <span class="status-badge <?php echo $statusClass; ?>">
-                                                <?php echo $statusText; ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo date('M d, Y', strtotime($item['created_at'])); ?></td>
-                                        <td>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem('<?php echo $item['table_name']; ?>', <?php echo $item['id']; ?>, '<?php echo htmlspecialchars($item['name']); ?>')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                        ?>
+                                        <tr>
+                                            <td><?php echo $item['id']; ?></td>
+                                            <td><?php echo htmlspecialchars($item['name']); ?></td>
+                                            <td><?php echo $item['category']; ?></td>
+                                            <td><?php echo htmlspecialchars($item['email']); ?></td>
+                                            <td><?php echo date('M d, Y', strtotime($item['expiry_date'])); ?></td>
+                                            <td>
+                                                <span class="status-badge <?php echo $statusClass; ?>">
+                                                    <?php echo $statusText; ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo date('M d, Y', strtotime($item['created_at'])); ?></td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-danger"
+                                                    onclick="deleteItem('<?php echo $item['table_name']; ?>', <?php echo $item['id']; ?>, '<?php echo htmlspecialchars($item['name']); ?>')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        
+
                     </div>
                 </div>
             </main>
@@ -436,4 +455,5 @@ foreach ($tables as $table => $tableName) {
         }
     </script>
 </body>
+
 </html>

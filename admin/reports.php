@@ -1,5 +1,11 @@
 <?php
-require_once '../config/admin_auth.php';
+
+// ENABLE DEBUGGING - REMOVE IN PRODUCTION
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+require_once 'config/admin_auth.php';
 
 // Initialize auth
 $auth = new AdminAuth();
@@ -13,9 +19,10 @@ $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01'); 
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d'); // Today
 
 // Get analytics data
-function getAnalyticsData($db, $startDate, $endDate) {
+function getAnalyticsData($db, $startDate, $endDate)
+{
     $data = [];
-    
+
     // User registration trends
     $userQuery = "SELECT DATE(created_at) as date, COUNT(*) as count 
                   FROM users 
@@ -26,16 +33,16 @@ function getAnalyticsData($db, $startDate, $endDate) {
     $stmt->bind_param("ss", $startDate, $endDate);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $data['user_registrations'] = [];
     while ($row = $result->fetch_assoc()) {
         $data['user_registrations'][] = $row;
     }
-    
+
     // Items added trends
     $tables = ['documents', 'medicines', 'foods', 'books', 'cosmetics', 'other_items'];
     $data['items_added'] = [];
-    
+
     foreach ($tables as $table) {
         $itemQuery = "SELECT DATE(created_at) as date, COUNT(*) as count, '$table' as category
                       FROM $table 
@@ -45,12 +52,12 @@ function getAnalyticsData($db, $startDate, $endDate) {
         $stmt->bind_param("ss", $startDate, $endDate);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         while ($row = $result->fetch_assoc()) {
             $data['items_added'][] = $row;
         }
     }
-    
+
     // Category distribution
     $data['category_distribution'] = [];
     foreach ($tables as $table) {
@@ -65,41 +72,41 @@ function getAnalyticsData($db, $startDate, $endDate) {
             ];
         }
     }
-    
+
     // Expiry status distribution
     $expiryData = [];
     $totalItems = 0;
     $expiredItems = 0;
     $expiringSoon = 0;
-    
+
     foreach ($tables as $table) {
         // Total items
         $result = $db->query("SELECT COUNT(*) as count FROM $table");
         if ($result) {
             $totalItems += $result->fetch_assoc()['count'];
         }
-        
+
         // Expired items
         $result = $db->query("SELECT COUNT(*) as count FROM $table WHERE expiry_date < CURDATE()");
         if ($result) {
             $expiredItems += $result->fetch_assoc()['count'];
         }
-        
+
         // Expiring soon (within 7 days)
         $result = $db->query("SELECT COUNT(*) as count FROM $table WHERE expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)");
         if ($result) {
             $expiringSoon += $result->fetch_assoc()['count'];
         }
     }
-    
+
     $goodItems = $totalItems - $expiredItems - $expiringSoon;
-    
+
     $data['expiry_status'] = [
         ['status' => 'Good', 'count' => $goodItems],
         ['status' => 'Expiring Soon', 'count' => $expiringSoon],
         ['status' => 'Expired', 'count' => $expiredItems]
     ];
-    
+
     return $data;
 }
 
@@ -140,6 +147,7 @@ foreach ($tables as $table) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -157,6 +165,7 @@ foreach ($tables as $table) {
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
             background-color: #4e73df;
         }
+
         .sidebar-sticky {
             position: relative;
             top: 0;
@@ -165,20 +174,25 @@ foreach ($tables as $table) {
             overflow-x: hidden;
             overflow-y: auto;
         }
+
         .sidebar .nav-link {
             font-weight: 500;
             color: #fff;
             padding: .75rem 1rem;
         }
+
         .sidebar .nav-link:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
+
         .sidebar .nav-link.active {
             background-color: rgba(255, 255, 255, 0.2);
         }
+
         .sidebar .nav-link i {
             margin-right: 10px;
         }
+
         .navbar-brand {
             padding-top: .75rem;
             padding-bottom: .75rem;
@@ -186,15 +200,18 @@ foreach ($tables as $table) {
             background-color: rgba(0, 0, 0, .25);
             box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
         }
+
         main {
             margin-top: 56px;
         }
+
         .chart-container {
             position: relative;
             height: 400px;
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
         <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="#">EDR Admin</a>
@@ -242,7 +259,8 @@ foreach ($tables as $table) {
                         </li>
                     </ul>
 
-                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white">
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white">
                         <span>Reports</span>
                     </h6>
                     <ul class="nav flex-column mb-2">
@@ -263,17 +281,20 @@ foreach ($tables as $table) {
             </nav>
 
             <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Analytics & Reports</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <form method="GET" class="form-inline">
                             <div class="form-group mr-2">
                                 <label for="start_date" class="sr-only">Start Date</label>
-                                <input type="date" class="form-control form-control-sm" id="start_date" name="start_date" value="<?php echo $startDate; ?>">
+                                <input type="date" class="form-control form-control-sm" id="start_date"
+                                    name="start_date" value="<?php echo $startDate; ?>">
                             </div>
                             <div class="form-group mr-2">
                                 <label for="end_date" class="sr-only">End Date</label>
-                                <input type="date" class="form-control form-control-sm" id="end_date" name="end_date" value="<?php echo $endDate; ?>">
+                                <input type="date" class="form-control form-control-sm" id="end_date" name="end_date"
+                                    value="<?php echo $endDate; ?>">
                             </div>
                             <button type="submit" class="btn btn-sm btn-primary">Update</button>
                         </form>
@@ -289,7 +310,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                             Total Users</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $summaryStats['total_users']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $summaryStats['total_users']; ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -306,7 +329,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                             Total Items</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $summaryStats['total_items']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $summaryStats['total_items']; ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-box fa-2x text-gray-300"></i>
@@ -323,7 +348,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                             Active Users</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $summaryStats['active_users']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $summaryStats['active_users']; ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-user-check fa-2x text-gray-300"></i>
@@ -340,7 +367,9 @@ foreach ($tables as $table) {
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                             New Users (Period)</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $summaryStats['new_users_period']; ?></div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php echo $summaryStats['new_users_period']; ?>
+                                        </div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-user-plus fa-2x text-gray-300"></i>
@@ -496,7 +525,13 @@ foreach ($tables as $table) {
         });
 
         function exportReport(format) {
-            alert('Export to ' + format.toUpperCase() + ' functionality would be implemented here.');
+            if (format === 'pdf') {
+                window.print(); // Use browser print for PDF
+                return;
+            }
+            var startDate = document.getElementById('start_date').value;
+            var endDate = document.getElementById('end_date').value;
+            window.location.href = 'export_report.php?format=' + format + '&start_date=' + startDate + '&end_date=' + endDate;
         }
 
         function printReport() {
@@ -504,4 +539,5 @@ foreach ($tables as $table) {
         }
     </script>
 </body>
+
 </html>
