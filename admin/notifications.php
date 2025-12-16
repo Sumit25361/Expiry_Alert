@@ -16,14 +16,31 @@ $db = $auth->getDb();
 $success_message = '';
 $error_message = '';
 
-// Function to send email using our simple sender
+/**
+ * Sends an email using the global email sender instance.
+ *
+ * @param string $to Recipient email address
+ * @param string $subject Email subject
+ * @param string $message Email body content (HTML)
+ * @return bool True if email sent successfully, false otherwise
+ */
 function sendEmail($to, $subject, $message)
 {
     global $emailSender;
     return $emailSender->sendEmail($to, $subject, $message);
 }
 
-// Function to get user's expiring items from EDR database
+/**
+ * Retrieves expiring items for a specific user across all item categories.
+ *
+ * Checks multiple tables (documents, medicines, foods, etc.) for items expiring
+ * within the specified number of days.
+ *
+ * @param mysqli $db Database connection object
+ * @param string $email User's email address
+ * @param int $daysAhead Number of days to look ahead for expiry
+ * @return array Array of expiring items with their details
+ */
 function getUserExpiringItems($db, $email, $daysAhead)
 {
     $tables = [
@@ -63,7 +80,15 @@ function getUserExpiringItems($db, $email, $daysAhead)
     return $expiringItems;
 }
 
-// Function to get all users with expiring items
+/**
+ * Retrieves a list of all users who have items expiring within the specified timeframe.
+ *
+ * Scans all item tables to find unique email addresses associated with expiring items.
+ *
+ * @param mysqli $db Database connection object
+ * @param int $daysAhead Number of days to look ahead for expiry
+ * @return array Array of unique user email addresses
+ */
 function getAllUsersWithExpiringItems($db, $daysAhead)
 {
     $tables = [
@@ -104,7 +129,17 @@ function getAllUsersWithExpiringItems($db, $daysAhead)
     return array_unique($userEmails);
 }
 
-// Function to create expiry notification email content
+/**
+ * Generates the HTML content for the expiry notification email.
+ *
+ * Creates a responsive HTML email template listing the expiring items with
+ * color-coded urgency indicators.
+ *
+ * @param array $items Array of expiring items
+ * @param int $daysAhead The timeframe used for this check
+ * @param string $userEmail The recipient's email address
+ * @return string Complete HTML email content
+ */
 function createExpiryEmailContent($items, $daysAhead, $userEmail)
 {
     $html = '
@@ -249,6 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if (!empty($expiringItems)) {
                         $itemCount = count($expiringItems);
+                        // Personalized subject line
                         $subject = "⚠️ EDR Alert: $itemCount Item(s) Expiring in $daysAhead Days";
                         $message = createExpiryEmailContent($expiringItems, $daysAhead, $email);
 
@@ -258,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $failedCount++;
                         }
 
-                        // Small delay to avoid overwhelming the mail server
+                        // Small delay to avoid overwhelming the mail server (rate limiting)
                         usleep(500000); // 0.5 second delay
                     }
                 }
