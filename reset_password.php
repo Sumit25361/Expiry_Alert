@@ -2,6 +2,11 @@
 // reset_password.php
 require_once 'config/database.php';
 
+// Enable Error Reporting for Debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 $error = '';
 $success = '';
 $token = $_GET['token'] ?? '';
@@ -17,6 +22,9 @@ $conn = $db->getConnection();
 
 // Verify Token
 $stmt = $conn->prepare("SELECT id FROM users WHERE reset_token_hash = ? AND reset_token_expires_at > NOW()");
+if (!$stmt) {
+    die("Database error (prepare failed): " . $conn->error);
+}
 $stmt->bind_param("s", $token_hash);
 $stmt->execute();
 $result = $stmt->get_result();

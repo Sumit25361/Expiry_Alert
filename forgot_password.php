@@ -2,7 +2,12 @@
 // forgot_password.php
 session_start();
 require_once 'config/database.php';
-require_once 'services/notification_service.php';
+require_once 'admin/email_sender.php';
+
+// Enable Error Reporting for Debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 $message = '';
 $error = '';
@@ -32,16 +37,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $update->bind_param("ssi", $token_hash, $expiry, $user['id']);
 
         if ($update->execute()) {
-            // Send Email
-            $notificationService = new NotificationService();
-            // Use a new method we will add, or generic logic
-            // For now, let's try to add the method to NotificationService, 
-            // but if that fails, we might need a fallback.
-            // Let's assume we will add sendPasswordResetNotification next.
-
+            // Send Email using admin/email_sender.php
             $reset_link = "http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/reset_password.php?token=" . $token;
 
-            if ($notificationService->sendPasswordResetNotification($email, $user['username'], $reset_link)) {
+            $subject = "Password Reset Request - Expiry Alert";
+            $body = "
+                <html>
+                <head>
+                    <style>
+                        .container { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; }
+                        .button { background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+                        .footer { margin-top: 30px; font-size: 12px; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <h2>Password Reset Request</h2>
+                        <p>Hello " . htmlspecialchars($user['username']) . ",</p>
+                        <p>We received a request to reset your password for Expiry Alert. If you did not make this request, please ignore this email.</p>
+                        <p>To reset your password, click the button below (valid for 1 hour):</p>
+                        <p><a href='" . $reset_link . "' class='button'>Reset Password</a></p>
+                        <p>Or copy this link to your browser:</p>
+                        <p>" . $reset_link . "</p>
+                        <div class='footer'>
+                            <p>Expiry Alert System</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            ";
+
+            global $emailSender;
+            if ($emailSender->sendEmail($email, $subject, $body)) {
                 $message = "We have sent a password reset link to your email.";
             } else {
                 $error = "Failed to send email. Please try again later.";
