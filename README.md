@@ -1,119 +1,97 @@
-# Credit Card Fraud Detection using Big Data and Spark Streaming
+# Expiry Alert - Expiry Date Management System
 
 ## Project Description
-This project addresses the critical issue of credit card fraud by leveraging Big Data technologies to detect fraudulent transactions in real-time. Traditional fraud detection systems often struggle with the volume and velocity of modern transaction data. This system utilizes **Apache Spark Streaming** for real-time processing, **Kafka** for data ingestion, and **HBase/MongoDB** for storage to identify suspicious activities instantly based on predefined rules and geolocation logic.
+**Expiry Alert** is a comprehensive web application designed to help individuals and families track the expiration dates of various household items. From important documents and medications to food and cosmetics, this system centralizes all expiry information to prevent waste, ensure safety, and avoid missed deadlines.
+
+The application features a user-friendly dashboard for regular users to manage their items and an admin panel for overall system oversight.
 
 ## Objectives of the Project
-- **Real-time Detection:** Process and analyze transaction data as it arrives to detect fraud immediately.
-- **Scalability:** Build a system capable of handling high-throughput transaction streams.
-- **Accuracy:** Implement robust validation rules to minimize false positives and false negatives.
-- **Geospatial Analysis:** Use location data to identify physically impossible transactions (e.g., card usage in two distant locations within a short time).
-- **Data Storage:** Efficiently store transaction history for auditing and further analysis.
+-   **Waste Reduction:** Minimize food and medicine waste by alerting users before items expire.
+-   **Safety:** Prevent the use of expired medications and beauty products.
+-   **Organization:** Centralize tracking for documents (passports, licenses) to avoid penalties.
+-   **Simplicity:** Provide an intuitive interface that makes tracking dates effortless.
+-   **Automation:** Send automated notifications to users as expiry dates approach.
 
 ## System Architecture
-The system follows a standard Big Data streaming architecture:
-1. **Data Source:** Transactions are simulated or ingested from a source (e.g., CSV, API).
-2. **Data Ingestion (Kafka):** Transactions are pushed to a Kafka topic.
-3. **Processing Engine (Spark Streaming):** Spark consumes data from Kafka, applies validation rules, and performs geospatial analysis.
-4. **Rule Engine:** A dedicated module checks transactions against specific fraud criteria.
-5. **Storage (HBase/MongoDB):** Valid and fraudulent transactions are stored for record-keeping.
-6. **Visualization:** Statistics and alerts can be visualized on a dashboard.
+The system follows a standard **MVC (Model-View-Controller)** pattern implemented in core PHP:
+-   **Frontend:** HTML5, CSS3, JavaScript, and Bootstrap for a responsive user interface.
+-   **Backend:** Core PHP handling business logic, session management, and database interactions.
+-   **Database:** MySQL for storing user data, item details, and activity logs.
+-   **Notification Service:** A background service (cron job) that checks for upcoming expiry dates and triggers email alerts via PHPMailer.
 
 ## Project Structure
 The repository is organized as follows:
 
-- **`data/uszipsv.csv`**: Contains US zip code data including latitude and longitude, used for geospatial distance calculations.
-- **`db/dao.py`**: Data Access Object layer handling connections and operations with the database (HBase or MongoDB).
-- **`db/geo_map.py`**: Helper module for performing geospatial calculations (e.g., Haversine formula) to determine distances between transaction locations.
-- **`rules/rules.py`**: Defines the core logic and business rules for identifying fraud (e.g., checking score limits, velocity, and location).
-- **`driver.py`**: The main entry point of the application. It initializes the Spark context, sets up the streaming job, and orchestrates the flow.
-- **`LogicFinal.pdf`**: A document detailing the logic, algorithms, and mathematical models used in the project.
+-   **`admin/`**: Contains administrative scripts (`dashboard.php`, `users.php`, `reports.php`, `logs.php`) for managing the platform.
+-   **`config/`**: Configuration files for database connections (`database.php`) and email settings.
+-   **`pending_emails/` & `saved_emails/`**: Directories used by the email notification system to queue and archive sent emails.
+-   **`services/`**: specialized service logic.
+-   **`index.php`**: The main user dashboard showing an overview of tracked items.
+-   **`login.php` / `register.php`**: User authentication modules.
+-   **`[category].php`**: Dedicated pages for each category (`medicine.php`, `food.php`, `documents.php`, etc.).
+-   **`cron_notifications.php`**: Script meant to be run periodically to check for expiring items and queue emails.
+-   **`about.php`**: Information about the application and its mission.
 
 ## Technologies Used
-- **Programming Language:** Python (PySpark)
-- **Big Data Frameworks:** Apache Spark, Spark Streaming
-- **Message Broker:** Apache Kafka
-- **Databases:** HBase (NoSQL) or MongoDB
-- **Libraries:** `pykafka`, `happybase`, `geopy` (or custom geo logic)
-- **Environment:** Linux / Windows (with WSL), Java JDK 8+, Hadoop
+-   **Language:** PHP (7.4+)
+-   **Database:** MySQL
+-   **Frontend:** HTML, CSS, JavaScript, Bootstrap
+-   **Server:** Apache (via XAMPP/WAMP or similar)
+-   **Libraries:** PHPMailer (for email notifications)
 
 ## How the System Works
-1. **Ingestion:** Transaction data including card ID, amount, merchant ID, and zip code is sent to a Kafka producer.
-2. **Streaming:** Spark Streaming subscribes to the Kafka topic and receives data in micro-batches.
-3. **Processing:**
-   - The **driver** program parses the incoming JSON data.
-   - It retrieves the last known location and timestamp for the card ID from the database using **dao.py**.
-   - **geo_map.py** calculates the distance and speed required to travel between the last transaction location and the current one.
-4. **Rule Application:**
-   - **rules.py** evaluates the transaction. If the speed is unrealistic (e.g., > 500 mph) or the amount exceeds a threshold, it is flagged as fraud.
-5. **Action:**
-   - Fraudulent transactions are logged to a "Fraud" table/collection.
-   - Legitimate transactions update the user's history in the database.
-
-## Fraud Detection Rules
-The system applies the following logic to flag transactions:
-- **Speed Fraud:** If a card is used at Location A and then at Location B, and the travel speed required to reach B from A exceeds a reasonable threshold (e.g., plane speed), it is flagged.
-- **Amount Threshold:** Transactions exceeding a user's historical average or specific limit are flagged.
-- **Score-based:** A composite score is calculated based on multiple factors; if it crosses a threshold, the transaction is marked suspicious.
+1.  **User Registration:** Users sign up to create a private account.
+2.  **Item Entry:** Users add items to specific categories (e.g., "Tylenol" to Medicines), setting an expiry date.
+3.  **Monitoring:** The system's dashboard classifies items into "Safe", "Expiring Soon" (e.g., within 7 days), and "Expired".
+4.  **Notification:**
+    -   On the dashboard, visual indicators warn the user.
+    -   The background cron script checks the database daily.
+    -   If an item is nearing expiry, an email is generated and placed in `pending_emails`.
+    -   The email service delivers the alert to the user.
+5.  **Reporting:** Users (and Admins) can generate reports to view history and usage trends.
 
 ## Installation and Setup
 
 ### Prerequisites
-- Python 3.6+
-- Apache Spark 3.x
-- Apache Kafka
-- HBase or MongoDB running locally or on a server
-- Java 8 (required for Spark/Hadoop)
+-   A local web server environment like **XAMPP**, **WAMP**, or **MAMP**.
+-   PHP 7.4 or higher.
+-   MySQL Database.
 
-### Environment Setup
-1. **Install Python dependencies:**
-   ```bash
-   pip install pyspark kafka-python happybase
-   ```
-2. **Start Zookeeper and Kafka:**
-   ```bash
-   bin/zookeeper-server-start.sh config/zookeeper.properties
-   bin/kafka-server-start.sh config/server.properties
-   ```
-3. **Start Database:**
-   - For HBase: `start-hbase.sh`
-   - For MongoDB: `mongod`
+### Steps
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/yourusername/expiry-alert.git
+    ```
+2.  **Move to Web Root:**
+    -   Copy the project folder to `htdocs` (XAMPP) or `www` (WAMP).
+3.  **Database Setup:**
+    -   Open phpMyAdmin (usually `http://localhost/phpmyadmin`).
+    -   Create a new database named `expiry_alert_db` (or check `config/database.php` for the configured name).
+    -   Import the provided SQL schema file if available (or recreate tables for `users`, `medicines`, `documents`, etc.).
+4.  **Configuration:**
+    -   Edit `config/database.php` to match your local database credentials.
+    -   Edit `config/email-phpmailer-manual.php` with your SMTP details if you want email alerts to work.
+5.  **Run the Application:**
+    -   Open your browser and navigate to `http://localhost/EDR`.
 
 ## How to Run the Project
+-   **Start Apache & MySQL:** Open your XAMPP/WAMP control panel and start both services.
+-   **Access the App:** Go to `http://localhost/EDR`.
+-   **Login:** Use your credentials. If new, register an account.
+-   **Test Alerts:** Add an item with an expiry date of tomorrow to see the "Expiring Soon" status.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/credit-card-fraud-detection.git
-   cd credit-card-fraud-detection
-   ```
-
-2. **Run the Kafka Producer (simulate transactions):**
-   ```bash
-   python producer.py
-   ```
-
-3. **Submit the Spark Job:**
-   ```bash
-   spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.8 driver.py
-   ```
-
-## Sample Use Case / Example Scenario
+## Sample Use Case
 **Scenario:**
-- **Time 10:00 AM:** User A makes a transaction in **New York** (Zip: 10001).
-- **Time 10:30 AM:** User A's card is used for a transaction in **Los Angeles** (Zip: 90001).
-
-**System Reaction:**
-- The system calculates the distance (~2,800 miles) and time difference (30 mins).
-- Speed calculated = 5,600 mph (Impossible).
-- **Result:** Transaction flagged as **FRAUD**.
+-   **User:** Sarah, a frequent traveler.
+-   **Action:** Sarah logs in and goes to the "Documents" section.
+-   **Input:** She adds her Passport, setting the expiry date to "2025-10-15".
+-   **Result:** The system tracks this date. Two months before expiry, Sarah receives an email reminding her to renew her passport, saving her from a last-minute travel crisis.
 
 ## Future Enhancements
-- **Machine Learning Integration:** Train a Random Forest or Logistic Regression model on historical data to predict fraud probability.
-- **Real-time Dashboard:** Build a web interface using Flask/Django or Grafana to visualize fraud alerts live.
-- **Scalability:** Deploy on a cloud cluster (AWS EMR or Databricks) for handling millions of transactions per second.
+-   **Mobile App:** Develop a native Android/iOS app for easier scanning of barcodes.
+-   **Barcode/QR Scanner:** Integrate camera functionality to scan product barcodes and auto-fill details.
+-   **Crowdsourced Data:** Build a database of common product shelf lives.
+-   **Cloud Integration:** Fully deploy to a cloud environment with managed databases.
 
 ## Conclusion
-This project demonstrates the power of Big Data tools in solving real-world security problems. By combining stream processing with rule-based logic, we achieved a low-latency fraud detection system suitable for modern banking needs.
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+Expiry Alert transforms the mundane task of tracking dates into an automated, worry-free process. By leveraging this tool, users can save money, reduce waste, and manage their responsibilities more effectively.
